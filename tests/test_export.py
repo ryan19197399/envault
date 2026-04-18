@@ -49,8 +49,26 @@ def test_from_dotenv_single_quotes():
     assert result["FOO"] == "hello world"
 
 
+def test_from_dotenv_unquoted_value():
+    content = "FOO=simplevalue"
+    result = from_dotenv(content)
+    assert result["FOO"] == "simplevalue"
+
+
+def test_from_dotenv_empty_value():
+    content = 'FOO=""'
+    result = from_dotenv(content)
+    assert result["FOO"] == ""
+
+
 def test_roundtrip_dotenv():
     original = {"API_KEY": "secret123", "DEBUG": "true"}
     content = to_dotenv(original)
     parsed = from_dotenv(content)
     assert parsed == original
+
+
+def test_roundtrip_shell_exports_special_chars():
+    original = {"MSG": "it's a test"}
+    result = to_shell_exports(original)
+    assert "MSG" in result
