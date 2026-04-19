@@ -36,3 +36,12 @@ def apply_profile(vault_data: dict, profile_name: str) -> dict | None:
         return None
     vars_ = vault_data.get("vars", {})
     return {k: vars_[k] for k in keys if k in vars_}
+
+
+def rename_profile(vault_data: dict, old_name: str, new_name: str) -> bool:
+    """Rename a profile. Returns True if successful, False if old_name not found."""
+    profiles = vault_data.get(PROFILES_KEY, {})
+    if old_name not in profiles:
+        return False
+    profiles[new_name] = profiles.pop(old_name)
+    return True
