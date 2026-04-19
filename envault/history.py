@@ -53,3 +53,9 @@ def clear_history(vault_data: dict, key: Optional[str] = None) -> dict:
             e for e in vault_data.get(HISTORY_KEY, []) if e["key"] != key
         ]
     return vault_data
+
+
+def get_last_change(vault_data: dict, key: str) -> Optional[dict]:
+    """Return the most recent history entry for a given key, or None if not found."""
+    entries = get_history(vault_data, key=key)
+    return entries[-1] if entries else None
