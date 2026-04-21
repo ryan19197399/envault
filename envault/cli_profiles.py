@@ -26,6 +26,12 @@ def profile():
 def save_cmd(name, keys, vault_name, password):
     """Save a named profile with the given variable keys."""
     v = Vault(vault_name, password)
+    missing = [k for k in keys if k not in v.data.get("variables", {})]
+    if missing:
+        click.echo(
+            f"Warning: the following key(s) do not exist in the vault: {', '.join(missing)}",
+            err=True,
+        )
     save_profile(v.data, name, list(keys))
     v.save()
     click.echo(f"Profile '{name}' saved with {len(keys)} key(s).")
