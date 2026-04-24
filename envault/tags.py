@@ -44,3 +44,20 @@ def all_tags(vault_data: dict) -> List[str]:
     for tag_list in tags_map.values():
         unique.update(tag_list)
     return sorted(unique)
+
+
+def rename_tag(vault_data: dict, old_tag: str, new_tag: str) -> int:
+    """Rename a tag across all keys in the vault.
+
+    Replaces every occurrence of ``old_tag`` with ``new_tag`` and returns
+    the number of keys that were updated.
+    """
+    tags_map: Dict[str, List[str]] = vault_data.get(TAGS_KEY, {})
+    updated = 0
+    for key, tag_list in tags_map.items():
+        if old_tag in tag_list:
+            tag_list.remove(old_tag)
+            if new_tag not in tag_list:
+                tag_list.append(new_tag)
+            updated += 1
+    return updated
