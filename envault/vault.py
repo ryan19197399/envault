@@ -38,6 +38,23 @@ class Vault:
     def exists(self) -> bool:
         return vault_exists(self.name, self.vault_dir)
 
+    def update(self, secrets: dict) -> None:
+        """Merge multiple key-value pairs into the vault.
+
+        Existing keys are overwritten; keys not present in *secrets* are
+        left untouched.
+
+        Args:
+            secrets: A mapping of environment variable names to their values.
+        """
+        for key, value in secrets.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                raise TypeError(
+                    f"Both key and value must be strings, got {type(key).__name__!r} "
+                    f"and {type(value).__name__!r}."
+                )
+        self._secrets.update(secrets)
+
     @classmethod
     def create(cls, name: str, password: str, vault_dir: Path = DEFAULT_VAULT_DIR) -> "Vault":
         """Create a new empty vault and persist it."""
