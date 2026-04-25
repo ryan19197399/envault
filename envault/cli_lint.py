@@ -13,48 +13,40 @@ def lint():
 
 @lint.command("check")
 @click.argument("vault_name")
-@click.password_option("--password", "-p", prompt=True, confirmation_prompt=False,
-                       help="Vault password.")
-@click.option("--strict", is_flag=True, default=False,
-              help="Exit with non-zero status if any issues found.")
+@click.option("--password", prompt=True, hide_input=True, help="Vault password.")
+@click.option("--strict", is_flag=True, default=False, help="Exit with non-zero code if issues found.")
 @click.option("--only", multiple=True,
               type=click.Choice(["naming", "empty", "duplicates", "ttl"], case_sensitive=False),
               help="Run only specific lint checks.")
 def check_cmd(vault_name, password, strict, only):
-    """Run lint checks on a vault and report issues."""
+    """Run lint checks against a vault."""
     try:
-        vault = Vault.load(vault_name, password)
+        v = Vault.load(vault_name, password)
     except FileNotFoundError:
-        click.echo(f"Vault '{vault_name}' does not exist.", err=True)
+        click.echo(f"Vault '{vault_name}' not found.", err=True)
         raise SystemExit(1)
-    except Exception:
-        click.echo("Failed to load vault. Wrong password?", err=True)
+    except Exception as e:
+        click.echo(f"Error loading vault: {e}", err=True)
         raise SystemExit(1)
 
-    results = run_lint(vault.data)
+    results = run_lint(v.data, checks=list(only) if only else None)
 
-    # Filter by requested checks
-    filter_map = {
-        "naming": "naming",
-        "empty": "empty",
-        "duplicates": "duplicates",
-        "ttl": "ttl",
-    }
-    if only:
-        selected = {filter_map[o.lower()] for o in only}
-        results = {k: v for k, v in results.items() if k in selected}
+    if not results:
+        click.echo(click.style("✔ No issues found.", fg="green"))
+        return
 
-    total = 0
-    for check, issues in results.items():
-        if issues:
-            click.echo(f"\n[{check.upper()}]")
-            for issue in issues:
-                click.echo(f"  • {issue}")
-            total += len(issues)
+    total = sum(len(issues) for issues in results.values())
+    click.echo(click.style(f"Found {total} issue(s):\n", fg="yellow"))
 
-    if total == 0:
-        click.echo("✓ No issues found.")
-    else:
-        click.echo(f"\n{total} issue(s) found.")
-        if strict:
-            raise SystemExit(1)
+    for check_name, issues in results.items():
+        if not issues:
+            continue
+        click.echo(click.style(f"  [{check_name}]", fg="cyan", bold=True))
+        for issue in issues:
+            key = issue.get("key", "<vault>")
+            message = issue.get("message", "")
+            click.echo(f"    • {key}: {message}")
+        click.echo()
+
+    if strict and total > 0:
+        raise SystemExit(1)
